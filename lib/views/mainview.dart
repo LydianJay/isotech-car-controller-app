@@ -33,6 +33,7 @@ class _MainViewState extends State<MainView> {
         if (mounted) setState(() => _scanResults.add(device));
       });
     } catch (e) {
+      debugPrint('Error:');
       if (kDebugMode) print(e);
     }
 
