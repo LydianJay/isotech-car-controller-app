@@ -4,6 +4,7 @@ import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
+// 38:81:D7:2D:65:CD
 class MainView extends StatefulWidget {
   const MainView({super.key});
 
