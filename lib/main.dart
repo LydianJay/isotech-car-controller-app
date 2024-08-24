@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffdc3545)),
         useMaterial3: true,
-        buttonTheme: const ButtonThemeData(minWidth: 100, height: 100),
+        buttonTheme: const ButtonThemeData(minWidth: 80, height: 80),
       ),
       home: const MainView(),
     );

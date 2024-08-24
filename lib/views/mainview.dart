@@ -1,11 +1,8 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
 import 'dart:async';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
-// 38:81:D7:2D:65:CD
 class MainView extends StatefulWidget {
   const MainView({super.key});
 
@@ -21,12 +18,11 @@ class _MainViewState extends State<MainView> {
 
   bool isFound = false;
   bool isConnected = false;
-  String? id = null;
-  Uuid? serviceId = null;
-  Uuid? charId = null;
+  String? id;
+  Uuid? serviceId;
+  Uuid? charId;
 
   int armState = 0;
-
   @override
   void initState() {
     super.initState();
@@ -41,8 +37,9 @@ class _MainViewState extends State<MainView> {
       debugPrint("ID: ${d.id} ");
       _connectSub = _ble.connectToDevice(id: d.id).listen((update) {
         if (update.connectionState == DeviceConnectionState.connected) {
-          // _onConnected(d.id, d.serviceUuids.first);
-          isConnected = true;
+          setState(() {
+            isConnected = true;
+          });
           id = d.id;
           serviceId = d.serviceUuids.first;
           charId = d.serviceUuids[1];
@@ -57,32 +54,20 @@ class _MainViewState extends State<MainView> {
     }
   }
 
-  void _sendBytes(String id, Uuid serviceID, Uuid charID) {
+  void _sendBytes(String id, Uuid serviceID, Uuid charID, List<int> data) {
     final characteristic = QualifiedCharacteristic(
       deviceId: id,
       characteristicId: charID,
       serviceId: serviceID,
     );
-
-    _ble.writeCharacteristicWithoutResponse(characteristic,
-        value: [armState, 0x00]).onError((E, s) {
+    data.first |= armState;
+    _ble
+        .writeCharacteristicWithoutResponse(characteristic, value: data)
+        .onError((E, s) {
       debugPrint("Error Occured: ${E.toString()}");
       debugPrintStack(stackTrace: s);
     });
-    armState == 16 ? armState = 0 : armState = 16;
   }
-
-  // void _onConnected(String deviceId) {
-  //   final characteristic = QualifiedCharacteristic(
-  //       deviceId: deviceId,
-  //       serviceId: Uuid.parse('00000000-5EC4-4083-81CD-A10B8D5CF6EC'),
-  //       characteristicId: Uuid.parse('00000001-5EC4-4083-81CD-A10B8D5CF6EC'));
-  //   _notifySub = _ble.subscribeToCharacteristic(characteristic).listen((bytes) {
-  //     setState(() {
-  //       _value = const Utf8Decoder().convert(bytes);
-  //     });
-  //   });
-  // }
 
   @override
   void dispose() {
@@ -103,14 +88,31 @@ class _MainViewState extends State<MainView> {
       child: Row(
         children: [
           SizedBox(
-            width: scrHeight,
-            height: scrHeight,
+            width: scrHeight * 0.85,
+            height: scrHeight * 0.85,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton.filled(
                   onPressed: () {},
-                  icon: const Icon(Icons.arrow_upward),
+                  icon: GestureDetector(
+                    onTapDown: (details) {
+                      debugPrint('tap');
+                      if (isConnected) {
+                        int tiltState = 4;
+
+                        final List<int> data = [tiltState, 0];
+                        _sendBytes(id!, serviceId!, charId!, data);
+                      } else {
+                        debugPrint('Not connected!');
+                      }
+                    },
+                    onTapUp: (details) {
+                      debugPrint('released');
+                      _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                    },
+                    child: const Icon(Icons.arrow_upward),
+                  ),
                   iconSize: 50,
                 ),
                 Row(
@@ -118,13 +120,29 @@ class _MainViewState extends State<MainView> {
                   children: [
                     IconButton.filled(
                       onPressed: () {},
-                      icon: const Icon(Icons.arrow_back),
+                      icon: GestureDetector(
+                        onTapDown: (details) {
+                          debugPrint('tap');
+                          if (isConnected) {
+                            final List<int> data = [2, 0];
+                            _sendBytes(id!, serviceId!, charId!, data);
+                          } else {
+                            debugPrint('Not connected!');
+                          }
+                        },
+                        onTapUp: (details) {
+                          debugPrint('released');
+                          _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                        },
+                        child: const Icon(Icons.arrow_back),
+                      ),
                       iconSize: 50,
                     ),
                     IconButton.filled(
                       onPressed: () async {
                         if (isConnected) {
-                          _sendBytes(id!, serviceId!, charId!);
+                          armState == 16 ? armState = 0 : armState = 16;
+                          _sendBytes(id!, serviceId!, charId!, [armState, 0]);
                         } else {
                           debugPrint('Not connected!');
                         }
@@ -134,25 +152,174 @@ class _MainViewState extends State<MainView> {
                     ),
                     IconButton.filled(
                       onPressed: () {},
-                      icon: const Icon(Icons.arrow_forward),
+                      icon: GestureDetector(
+                        onTapDown: (details) {
+                          debugPrint('tap');
+                          if (isConnected) {
+                            final List<int> data = [1, 0];
+                            _sendBytes(id!, serviceId!, charId!, data);
+                          } else {
+                            debugPrint('Not connected!');
+                          }
+                        },
+                        onTapUp: (details) {
+                          debugPrint('released');
+                          _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                        },
+                        child: const Icon(Icons.arrow_forward),
+                      ),
                       iconSize: 50,
                     ),
                   ],
                 ),
                 IconButton.filled(
                   onPressed: () {},
-                  icon: const Icon(Icons.arrow_downward),
+                  icon: GestureDetector(
+                    onTapDown: (details) {
+                      debugPrint('tap');
+                      if (isConnected) {
+                        int tiltState = 8;
+
+                        final List<int> data = [tiltState, 0];
+                        _sendBytes(id!, serviceId!, charId!, data);
+                      } else {
+                        debugPrint('Not connected!');
+                      }
+                    },
+                    onTapUp: (details) {
+                      debugPrint('released');
+                      _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                    },
+                    child: const Icon(Icons.arrow_downward),
+                  ),
                   iconSize: 50,
                 ),
               ],
             ),
           ),
+          Container(
+            margin: const EdgeInsets.only(top: 25),
+            alignment: Alignment.topCenter,
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: isConnected
+                    ? Colors.green
+                    : const Color.fromARGB(255, 255, 0, 0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                isConnected ? 'Connected' : 'Not connected',
+                maxLines: 2,
+                style: const TextStyle(
+                  fontFamily: 'Helvetica',
+                  fontSize: 20,
+                  fontStyle: FontStyle.normal,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ),
+          ),
           SizedBox(
-            width: scrWidth / 3.0,
-            height: scrHeight,
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [],
+            width: scrHeight * 0.85,
+            height: scrHeight * 0.85,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 25),
+                  child: IconButton.filled(
+                    onPressed: () {},
+                    icon: GestureDetector(
+                      onTapDown: (details) {
+                        debugPrint('tap');
+                        if (isConnected) {
+                          final List<int> data = [0, 163];
+                          _sendBytes(id!, serviceId!, charId!, data);
+                        } else {
+                          debugPrint('Not connected!');
+                        }
+                      },
+                      onTapUp: (details) {
+                        debugPrint('released');
+                        _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                      },
+                      child: const Icon(Icons.arrow_upward),
+                    ),
+                    iconSize: 50,
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton.filled(
+                      onPressed: () {},
+                      icon: GestureDetector(
+                        onTapDown: (details) {
+                          debugPrint('tap');
+                          if (isConnected) {
+                            final List<int> data = [0, 172];
+                            _sendBytes(id!, serviceId!, charId!, data);
+                          } else {
+                            debugPrint('Not connected!');
+                          }
+                        },
+                        onTapUp: (details) {
+                          debugPrint('released');
+                          _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                        },
+                        child: const Icon(Icons.arrow_back),
+                      ),
+                      iconSize: 50,
+                    ),
+                    IconButton.filled(
+                      onPressed: () {},
+                      icon: GestureDetector(
+                        onTapDown: (details) {
+                          debugPrint('tap');
+                          if (isConnected) {
+                            final List<int> data = [0, 83];
+                            _sendBytes(id!, serviceId!, charId!, data);
+                          } else {
+                            debugPrint('Not connected!');
+                          }
+                        },
+                        onTapUp: (details) {
+                          debugPrint('released');
+                          _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                        },
+                        child: const Icon(Icons.arrow_forward),
+                      ),
+                      iconSize: 50,
+                    ),
+                  ],
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 45),
+                  child: IconButton.filled(
+                    onPressed: () {},
+                    icon: GestureDetector(
+                      onTapDown: (details) {
+                        debugPrint('tap');
+                        if (isConnected) {
+                          final List<int> data = [0, 92];
+                          _sendBytes(id!, serviceId!, charId!, data);
+                        } else {
+                          debugPrint('Not connected!');
+                        }
+                      },
+                      onTapUp: (details) {
+                        debugPrint('released');
+                        _sendBytes(id!, serviceId!, charId!, [0, 0]);
+                      },
+                      child: const Icon(Icons.arrow_downward),
+                    ),
+                    iconSize: 50,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
