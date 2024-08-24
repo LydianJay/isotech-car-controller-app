@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
 import 'dart:async';
@@ -17,6 +19,14 @@ class _MainViewState extends State<MainView> {
   StreamSubscription<ConnectionStateUpdate>? _connectSub;
   StreamSubscription<List<int>>? _notifySub;
 
+  bool isFound = false;
+  bool isConnected = false;
+  String? id = null;
+  Uuid? serviceId = null;
+  Uuid? charId = null;
+
+  int armState = 0;
+
   @override
   void initState() {
     super.initState();
@@ -24,8 +34,55 @@ class _MainViewState extends State<MainView> {
   }
 
   void _onScanUpdate(DiscoveredDevice d) {
-    debugPrint(d.name);
+    if (d.name == "BT05" && !isFound) {
+      isFound = true;
+
+      debugPrint("service ID: ${d.serviceUuids.first.toString()} ");
+      debugPrint("ID: ${d.id} ");
+      _connectSub = _ble.connectToDevice(id: d.id).listen((update) {
+        if (update.connectionState == DeviceConnectionState.connected) {
+          // _onConnected(d.id, d.serviceUuids.first);
+          isConnected = true;
+          id = d.id;
+          serviceId = d.serviceUuids.first;
+          charId = d.serviceUuids[1];
+
+          for (var ids in d.serviceUuids) {
+            debugPrint("id: ${ids.toString()}");
+          }
+
+          debugPrint('Connected!');
+        }
+      });
+    }
   }
+
+  void _sendBytes(String id, Uuid serviceID, Uuid charID) {
+    final characteristic = QualifiedCharacteristic(
+      deviceId: id,
+      characteristicId: charID,
+      serviceId: serviceID,
+    );
+
+    _ble.writeCharacteristicWithoutResponse(characteristic,
+        value: [armState, 0x00]).onError((E, s) {
+      debugPrint("Error Occured: ${E.toString()}");
+      debugPrintStack(stackTrace: s);
+    });
+    armState == 16 ? armState = 0 : armState = 16;
+  }
+
+  // void _onConnected(String deviceId) {
+  //   final characteristic = QualifiedCharacteristic(
+  //       deviceId: deviceId,
+  //       serviceId: Uuid.parse('00000000-5EC4-4083-81CD-A10B8D5CF6EC'),
+  //       characteristicId: Uuid.parse('00000001-5EC4-4083-81CD-A10B8D5CF6EC'));
+  //   _notifySub = _ble.subscribeToCharacteristic(characteristic).listen((bytes) {
+  //     setState(() {
+  //       _value = const Utf8Decoder().convert(bytes);
+  //     });
+  //   });
+  // }
 
   @override
   void dispose() {
@@ -65,7 +122,13 @@ class _MainViewState extends State<MainView> {
                       iconSize: 50,
                     ),
                     IconButton.filled(
-                      onPressed: () async {},
+                      onPressed: () async {
+                        if (isConnected) {
+                          _sendBytes(id!, serviceId!, charId!);
+                        } else {
+                          debugPrint('Not connected!');
+                        }
+                      },
                       icon: const Icon(CustomIcon.robot_arm),
                       iconSize: 50,
                     ),
