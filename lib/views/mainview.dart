@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
-import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 // 38:81:D7:2D:65:CD
 class MainView extends StatefulWidget {
@@ -13,53 +12,27 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
-  final _flutterBlueClassicPlugin = FlutterBlueClassic();
-  BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
-  StreamSubscription? _adapterStateSubscription;
-  StreamSubscription? _scanSubscription;
-
-  StreamSubscription? _scanningStateSubscription;
-  final Set<BluetoothDevice> _scanResults = {};
-  Future<void> initPlatformState() async {
-    BluetoothAdapterState adapterState = _adapterState;
-
-    try {
-      adapterState = await _flutterBlueClassicPlugin.adapterStateNow;
-      _adapterStateSubscription =
-          _flutterBlueClassicPlugin.adapterState.listen((current) {
-        if (mounted) setState(() => _adapterState = current);
-      });
-      _scanSubscription =
-          _flutterBlueClassicPlugin.scanResults.listen((device) {
-        if (mounted) setState(() => _scanResults.add(device));
-      });
-    } catch (e) {
-      debugPrint('Error:');
-      if (kDebugMode) print(e);
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _adapterState = adapterState;
-    });
-  }
-
-  void _debugB() async {
-    var supported = await _flutterBlueClassicPlugin.isEnabled;
-    var isScanningNow = await _flutterBlueClassicPlugin.isScanningNow;
-    var adapterStateNow = await _flutterBlueClassicPlugin.adapterStateNow;
-    debugPrint("Is supported: $supported");
-    debugPrint("Is scanning: $isScanningNow");
-    debugPrint(adapterStateNow.toString());
-  }
+  final _ble = FlutterReactiveBle();
+  StreamSubscription<DiscoveredDevice>? _scanSub;
+  StreamSubscription<ConnectionStateUpdate>? _connectSub;
+  StreamSubscription<List<int>>? _notifySub;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
-    _flutterBlueClassicPlugin.startScan();
-    _debugB();
+    _scanSub = _ble.scanForDevices(withServices: []).listen(_onScanUpdate);
+  }
+
+  void _onScanUpdate(DiscoveredDevice d) {
+    debugPrint(d.name);
+  }
+
+  @override
+  void dispose() {
+    _notifySub?.cancel();
+    _connectSub?.cancel();
+    _scanSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -92,16 +65,7 @@ class _MainViewState extends State<MainView> {
                       iconSize: 50,
                     ),
                     IconButton.filled(
-                      onPressed: () async {
-                        List<BluetoothDevice> scanResults =
-                            _scanResults.toList();
-                        debugPrint(
-                            "Result: ${scanResults.toList().toString()}");
-                        _flutterBlueClassicPlugin.startScan();
-                        var isScanningNow =
-                            await _flutterBlueClassicPlugin.isScanningNow;
-                        debugPrint("Is scanning: $isScanningNow");
-                      },
+                      onPressed: () async {},
                       icon: const Icon(CustomIcon.robot_arm),
                       iconSize: 50,
                     ),
