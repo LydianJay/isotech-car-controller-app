@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:isotech_smart_car_app/views/controllerview.dart';
+import 'package:flutter/services.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -26,24 +27,31 @@ class _MainViewState extends State<MainView> {
   @override
   void initState() {
     super.initState();
+    if (_connectSub != null) {
+      _connectSub!.cancel();
+    }
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
-  /* 
-    _connectSub = _ble.connectToDevice(id: d.id).listen((update) {
-      if (update.connectionState == DeviceConnectionState.connected) {
-        setState(() {});
-        id = d.id;
-        serviceId = d.serviceUuids.first;
-        charId = d.serviceUuids[1];
-
-        for (var ids in d.serviceUuids) {
-          debugPrint("id: ${ids.toString()}");
-        }
-
-        debugPrint('Connected!');
-      }
-    });
-    */
+  Future<void> _dialogBuilder(BuildContext context, String blName) {
+    double scrWidth = MediaQuery.of(context).size.width;
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Connecting to $blName '),
+            content: Container(
+              padding: const EdgeInsets.only(left: 25, right: 25),
+              width: scrWidth * 0.1,
+              height: scrWidth * 0.5,
+              child: const CircularProgressIndicator(),
+            ),
+          );
+        });
+  }
 
   Widget buildList(
       double scrWidth, double scrHeight, DiscoveredDevice? device) {
@@ -107,13 +115,18 @@ class _MainViewState extends State<MainView> {
             Text(
                 "Service ID: ${d.serviceUuids.isNotEmpty ? d.serviceUuids.first.toString() : 'Not Available'}"),
             Text(
-                "Characteristic ID: ${d.serviceUuids.length >= 2 ? d.serviceUuids[1].toString() : 'Not Available'}"),
+                "Char. ID: ${d.serviceUuids.length >= 2 ? d.serviceUuids[1].toString() : 'Not Available'}"),
             IconButton.filledTonal(
-              onPressed: () {
-                _ble.connectToDevice(id: d.id).listen((update) {
+              onPressed: () async {
+                if (_connectSub != null) {
+                  await _connectSub!.cancel();
+                }
+                _dialogBuilder(context, d.name);
+                _connectSub = _ble.connectToDevice(id: d.id).listen((update) {
                   if (update.connectionState ==
                       DeviceConnectionState.connected) {
                     debugPrint('Connected!');
+                    Navigator.of(context).pop();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -122,6 +135,7 @@ class _MainViewState extends State<MainView> {
                           charID: d.serviceUuids[1],
                           id: d.id,
                           ble: _ble,
+                          connectSub: _connectSub,
                         ),
                       ),
                     );

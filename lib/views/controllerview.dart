@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
@@ -9,11 +11,13 @@ class ControllerView extends StatefulWidget {
   final Uuid? charID;
   final String? id;
   final FlutterReactiveBle ble;
+  final StreamSubscription<ConnectionStateUpdate>? connectSub;
   const ControllerView({
     required this.serviceID,
     required this.charID,
     required this.id,
     required this.ble,
+    required this.connectSub,
     super.key,
   });
 
@@ -61,8 +65,8 @@ class _ControllerViewState extends State<ControllerView> {
       child: Row(
         children: [
           SizedBox(
-            width: scrHeight,
-            height: scrHeight,
+            width: scrHeight * 0.83,
+            height: scrHeight * 0.83,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -159,9 +163,31 @@ class _ControllerViewState extends State<ControllerView> {
               ],
             ),
           ),
-          SizedBox(
-            width: scrHeight,
+          Container(
+            width: scrWidth * 0.15,
             height: scrHeight,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  child: IconButton.filled(
+                    onPressed: () async {
+                      await SystemChrome.setPreferredOrientations([
+                        DeviceOrientation.portraitUp,
+                        DeviceOrientation.portraitDown,
+                      ]);
+                      await widget.connectSub!.cancel();
+                      Navigator.pop(context);
+                    },
+                    icon: const Text('Disconnect'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: scrHeight * 0.9,
+            height: scrHeight * 0.9,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
