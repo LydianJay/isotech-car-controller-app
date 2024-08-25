@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class ControllerView extends StatefulWidget {
-  final Uuid serviceID;
-  final Uuid charID;
-  final String id;
+  final Uuid? serviceID;
+  final Uuid? charID;
+  final String? id;
+  final FlutterReactiveBle ble;
   const ControllerView({
     required this.serviceID,
     required this.charID,
     required this.id,
+    required this.ble,
     super.key,
   });
 
@@ -18,13 +22,13 @@ class ControllerView extends StatefulWidget {
 }
 
 class _ControllerViewState extends State<ControllerView> {
-  final _ble = FlutterReactiveBle();
+  late final FlutterReactiveBle _ble = widget.ble;
   int armState = 0;
-  void _sendBytes(String id, Uuid serviceID, Uuid charID, List<int> data) {
+  void _sendBytes(String? id, Uuid? serviceID, Uuid? charID, List<int> data) {
     final characteristic = QualifiedCharacteristic(
-      deviceId: id,
-      characteristicId: charID,
-      serviceId: serviceID,
+      deviceId: id!,
+      characteristicId: charID!,
+      serviceId: serviceID!,
     );
     data.first |= armState;
     _ble
@@ -33,6 +37,16 @@ class _ControllerViewState extends State<ControllerView> {
       debugPrint("Error Occured: ${E.toString()}");
       debugPrintStack(stackTrace: s);
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
   }
 
   @override
@@ -47,8 +61,8 @@ class _ControllerViewState extends State<ControllerView> {
       child: Row(
         children: [
           SizedBox(
-            width: scrHeight * 0.85,
-            height: scrHeight * 0.85,
+            width: scrHeight,
+            height: scrHeight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -89,7 +103,7 @@ class _ControllerViewState extends State<ControllerView> {
                           _sendBytes(widget.id, widget.serviceID, widget.charID,
                               [0, 0]);
                         },
-                        child: const Icon(Icons.arrow_back),
+                        child: const Icon(CustomIcon.rotate_left),
                       ),
                       iconSize: 50,
                     ),
@@ -116,7 +130,7 @@ class _ControllerViewState extends State<ControllerView> {
                           _sendBytes(widget.id, widget.serviceID, widget.charID,
                               [0, 0]);
                         },
-                        child: const Icon(Icons.arrow_forward),
+                        child: const Icon(CustomIcon.rotate_right),
                       ),
                       iconSize: 50,
                     ),
@@ -146,8 +160,8 @@ class _ControllerViewState extends State<ControllerView> {
             ),
           ),
           SizedBox(
-            width: scrHeight * 0.85,
-            height: scrHeight * 0.85,
+            width: scrHeight,
+            height: scrHeight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
