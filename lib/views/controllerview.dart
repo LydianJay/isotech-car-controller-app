@@ -194,7 +194,7 @@ class _ControllerViewState extends State<ControllerView> {
                       icon: GestureDetector(
                         onTapDown: (details) {
                           debugPrint('tap');
-                          final List<int> data = [0, 172];
+                          final List<int> data = [0, 83];
                           _sendBytes(
                               widget.id, widget.serviceID, widget.charID, data);
                         },
@@ -212,7 +212,7 @@ class _ControllerViewState extends State<ControllerView> {
                       icon: GestureDetector(
                         onTapDown: (details) {
                           debugPrint('tap');
-                          final List<int> data = [0, 83];
+                          final List<int> data = [0, 172];
                           _sendBytes(
                               widget.id, widget.serviceID, widget.charID, data);
                         },
