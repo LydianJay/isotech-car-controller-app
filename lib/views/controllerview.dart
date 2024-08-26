@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class ControllerView extends StatefulWidget {
   final Uuid? serviceID;
