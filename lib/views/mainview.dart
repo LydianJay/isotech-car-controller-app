@@ -116,43 +116,53 @@ class _MainViewState extends State<MainView> {
                 "Service ID: ${d.serviceUuids.isNotEmpty ? d.serviceUuids.first.toString() : 'Not Available'}"),
             Text(
                 "Char. ID: ${d.serviceUuids.length >= 2 ? d.serviceUuids[1].toString() : 'Not Available'}"),
-            IconButton.filledTonal(
-              onPressed: () async {
-                if (_connectSub != null) {
-                  await _connectSub!.cancel();
-                }
-                _dialogBuilder(context, d.name);
-                _connectSub = _ble.connectToDevice(id: d.id).listen((update) {
-                  if (update.connectionState ==
-                      DeviceConnectionState.connected) {
-                    debugPrint('Connected!');
-                    Navigator.of(context).pop();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ControllerView(
-                          serviceID: d.serviceUuids[0],
-                          charID: d.serviceUuids[1],
-                          id: d.id,
-                          ble: _ble,
-                          connectSub: _connectSub,
-                        ),
+            d.serviceUuids.length >= 2
+                ? IconButton.filledTonal(
+                    onPressed: () async {
+                      if (_connectSub != null) {
+                        await _connectSub!.cancel();
+                      }
+                      _dialogBuilder(context, d.name);
+                      _connectSub =
+                          _ble.connectToDevice(id: d.id).listen((update) {
+                        if (update.connectionState ==
+                            DeviceConnectionState.connected) {
+                          debugPrint('Connected!');
+                          Navigator.of(context).pop();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ControllerView(
+                                serviceID: d.serviceUuids.isNotEmpty
+                                    ? d.serviceUuids[0]
+                                    : null,
+                                charID: d.serviceUuids.length >= 2
+                                    ? d.serviceUuids[1]
+                                    : null,
+                                id: d.id,
+                                ble: _ble,
+                                connectSub: _connectSub,
+                              ),
+                            ),
+                          );
+                        }
+                      });
+                    },
+                    icon: SizedBox(
+                      width: scrWidth * 0.3,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Text('Connect'),
+                          Icon(CustomIcon.bluetooth_connected)
+                        ],
                       ),
-                    );
-                  }
-                });
-              },
-              icon: SizedBox(
-                width: scrWidth * 0.3,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Text('Connect'),
-                    Icon(CustomIcon.bluetooth_connected)
-                  ],
-                ),
-              ),
-            )
+                    ),
+                  )
+                : Text(
+                    'Invalid Device',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
           ],
         ),
       ));
@@ -182,6 +192,14 @@ class _MainViewState extends State<MainView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bluetooth Devices'),
+        actions: [
+          IconButton.filledTonal(
+            onPressed: () {
+              Navigator.pushNamed(context, '/devinfoview');
+            },
+            icon: const Icon(Icons.info),
+          )
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -196,7 +214,43 @@ class _MainViewState extends State<MainView> {
                   if (snapshot.hasData) {
                     return buildList(scrWidth, scrHeight, snapshot.data);
                   }
-                  return const CircularProgressIndicator();
+                  return SizedBox(
+                    width: scrWidth,
+                    height: scrWidth,
+                    child: Center(
+                        child: Column(
+                      children: [
+                        Container(
+                          margin: EdgeInsets.only(
+                              top: scrHeight * 0.2, bottom: scrHeight * 0.1),
+                          child: const CircularProgressIndicator(),
+                        ),
+                        Text(
+                          'If no device was found: ',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .copyWith(color: Colors.black, fontSize: 20),
+                        ),
+                        Text(
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          '1. Allow location permission in this app\n and restart',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium!
+                              .copyWith(color: Colors.black, fontSize: 16),
+                        ),
+                        Text(
+                          '2. Please Turn on Bluetooth',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium!
+                              .copyWith(color: Colors.black, fontSize: 16),
+                        ),
+                      ],
+                    )),
+                  );
                 }),
           ],
         ),

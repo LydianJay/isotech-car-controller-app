@@ -29,10 +29,14 @@ class _ControllerViewState extends State<ControllerView> {
   late final FlutterReactiveBle _ble = widget.ble;
   int armState = 0;
   void _sendBytes(String? id, Uuid? serviceID, Uuid? charID, List<int> data) {
+    if (id == null || charID == null || serviceID == null || id.isEmpty) {
+      return;
+    }
+
     final characteristic = QualifiedCharacteristic(
-      deviceId: id!,
-      characteristicId: charID!,
-      serviceId: serviceID!,
+      deviceId: id,
+      characteristicId: charID,
+      serviceId: serviceID,
     );
     data.first |= armState;
     _ble
@@ -163,7 +167,7 @@ class _ControllerViewState extends State<ControllerView> {
               ],
             ),
           ),
-          Container(
+          SizedBox(
             width: scrWidth * 0.15,
             height: scrHeight,
             child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isotech_smart_car_app/views/developerinfo.dart';
 import 'package:isotech_smart_car_app/views/mainview.dart';
 
 void main() {
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/mainview': (context) => const MainView(),
+        '/devinfoview': (context) => const DeveloperInfoView(),
       },
       initialRoute: '/mainview',
     );
