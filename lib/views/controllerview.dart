@@ -1,23 +1,17 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:isotech_smart_car_app/font/CustomIcon.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
+import 'dart:convert';
 
 class ControllerView extends StatefulWidget {
-  final Uuid? serviceID;
-  final Uuid? charID;
-  final String? id;
-  final FlutterReactiveBle ble;
-  final StreamSubscription<ConnectionStateUpdate>? connectSub;
+  final String ipAdd;
+  final int port;
+
   const ControllerView({
-    required this.serviceID,
-    required this.charID,
-    required this.id,
-    required this.ble,
-    required this.connectSub,
     super.key,
+    required this.ipAdd,
+    required this.port,
   });
 
   @override
@@ -25,25 +19,19 @@ class ControllerView extends StatefulWidget {
 }
 
 class _ControllerViewState extends State<ControllerView> {
-  late final FlutterReactiveBle _ble = widget.ble;
   int armState = 0;
-  void _sendBytes(String? id, Uuid? serviceID, Uuid? charID, List<int> data) {
-    if (id == null || charID == null || serviceID == null || id.isEmpty) {
-      return;
-    }
+  Socket? socket;
 
-    final characteristic = QualifiedCharacteristic(
-      deviceId: id,
-      characteristicId: charID,
-      serviceId: serviceID,
-    );
-    data.first |= armState;
-    _ble
-        .writeCharacteristicWithoutResponse(characteristic, value: data)
-        .onError((E, s) {
-      debugPrint("Error Occured: ${E.toString()}");
-      debugPrintStack(stackTrace: s);
-    });
+  void _sendBytes(List<int> data) async {
+    if (socket != null) {
+      socket!.add(data);
+      // socket!.write(data);
+      // debugPrint(data.toString());
+      // debugPrint('SEnding data');
+      // await socket!.flush();
+    } else {
+      debugPrint('Socket is null');
+    }
   }
 
   @override
@@ -54,6 +42,18 @@ class _ControllerViewState extends State<ControllerView> {
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
+
+    connectToDevice();
+  }
+
+  void connectToDevice() async {
+    try {
+      debugPrint("Connecting to ${widget.ipAdd} PORT: ${widget.port}");
+      socket = await Socket.connect(widget.ipAdd, widget.port);
+    } catch (e) {
+      debugPrint(e.toString());
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -81,13 +81,11 @@ class _ControllerViewState extends State<ControllerView> {
                       int tiltState = 4;
 
                       final List<int> data = [tiltState, 0];
-                      _sendBytes(
-                          widget.id, widget.serviceID, widget.charID, data);
+                      _sendBytes(data);
                     },
                     onTapUp: (details) {
                       debugPrint('released');
-                      _sendBytes(
-                          widget.id, widget.serviceID, widget.charID, [0, 0]);
+                      _sendBytes([0, 0]);
                     },
                     child: const Icon(Icons.arrow_upward),
                   ),
@@ -102,13 +100,11 @@ class _ControllerViewState extends State<ControllerView> {
                         onTapDown: (details) {
                           debugPrint('tap');
                           final List<int> data = [2, 0];
-                          _sendBytes(
-                              widget.id, widget.serviceID, widget.charID, data);
+                          _sendBytes(data);
                         },
                         onTapUp: (details) {
                           debugPrint('released');
-                          _sendBytes(widget.id, widget.serviceID, widget.charID,
-                              [0, 0]);
+                          _sendBytes([0, 0]);
                         },
                         child: const Icon(CustomIcon.rotate_left),
                       ),
@@ -117,8 +113,7 @@ class _ControllerViewState extends State<ControllerView> {
                     IconButton.filled(
                       onPressed: () async {
                         armState == 16 ? armState = 0 : armState = 16;
-                        _sendBytes(widget.id, widget.serviceID, widget.charID,
-                            [armState, 0]);
+                        _sendBytes([armState, 0]);
                       },
                       icon: const Icon(CustomIcon.robot_arm),
                       iconSize: 50,
@@ -129,13 +124,11 @@ class _ControllerViewState extends State<ControllerView> {
                         onTapDown: (details) {
                           debugPrint('tap');
                           final List<int> data = [1, 0];
-                          _sendBytes(
-                              widget.id, widget.serviceID, widget.charID, data);
+                          _sendBytes(data);
                         },
                         onTapUp: (details) {
                           debugPrint('released');
-                          _sendBytes(widget.id, widget.serviceID, widget.charID,
-                              [0, 0]);
+                          _sendBytes([0, 0]);
                         },
                         child: const Icon(CustomIcon.rotate_right),
                       ),
@@ -151,13 +144,11 @@ class _ControllerViewState extends State<ControllerView> {
                       int tiltState = 8;
 
                       final List<int> data = [tiltState, 0];
-                      _sendBytes(
-                          widget.id, widget.serviceID, widget.charID, data);
+                      _sendBytes(data);
                     },
                     onTapUp: (details) {
                       debugPrint('released');
-                      _sendBytes(
-                          widget.id, widget.serviceID, widget.charID, [0, 0]);
+                      _sendBytes([0, 0]);
                     },
                     child: const Icon(Icons.arrow_downward),
                   ),
@@ -179,8 +170,8 @@ class _ControllerViewState extends State<ControllerView> {
                         DeviceOrientation.portraitUp,
                         DeviceOrientation.portraitDown,
                       ]);
-                      await widget.connectSub!.cancel();
-                      Navigator.pop(context);
+                      // await widget.connectSub!.cancel();
+                      // Navigator.pop(context);
                     },
                     icon: const Text('Disconnect'),
                   ),
@@ -202,13 +193,11 @@ class _ControllerViewState extends State<ControllerView> {
                       onTapDown: (details) {
                         debugPrint('tap');
                         final List<int> data = [0, 163];
-                        _sendBytes(
-                            widget.id, widget.serviceID, widget.charID, data);
+                        _sendBytes(data);
                       },
                       onTapUp: (details) {
                         debugPrint('released');
-                        _sendBytes(
-                            widget.id, widget.serviceID, widget.charID, [0, 0]);
+                        _sendBytes([0, 0]);
                       },
                       child: const Icon(Icons.arrow_upward),
                     ),
@@ -224,13 +213,11 @@ class _ControllerViewState extends State<ControllerView> {
                         onTapDown: (details) {
                           debugPrint('tap');
                           final List<int> data = [0, 83];
-                          _sendBytes(
-                              widget.id, widget.serviceID, widget.charID, data);
+                          _sendBytes(data);
                         },
                         onTapUp: (details) {
                           debugPrint('released');
-                          _sendBytes(widget.id, widget.serviceID, widget.charID,
-                              [0, 0]);
+                          _sendBytes([0, 0]);
                         },
                         child: const Icon(Icons.arrow_back),
                       ),
@@ -242,13 +229,11 @@ class _ControllerViewState extends State<ControllerView> {
                         onTapDown: (details) {
                           debugPrint('tap');
                           final List<int> data = [0, 172];
-                          _sendBytes(
-                              widget.id, widget.serviceID, widget.charID, data);
+                          _sendBytes(data);
                         },
                         onTapUp: (details) {
                           debugPrint('released');
-                          _sendBytes(widget.id, widget.serviceID, widget.charID,
-                              [0, 0]);
+                          _sendBytes([0, 0]);
                         },
                         child: const Icon(Icons.arrow_forward),
                       ),
@@ -264,13 +249,11 @@ class _ControllerViewState extends State<ControllerView> {
                       onTapDown: (details) {
                         debugPrint('tap');
                         final List<int> data = [0, 92];
-                        _sendBytes(
-                            widget.id, widget.serviceID, widget.charID, data);
+                        _sendBytes(data);
                       },
                       onTapUp: (details) {
                         debugPrint('released');
-                        _sendBytes(
-                            widget.id, widget.serviceID, widget.charID, [0, 0]);
+                        _sendBytes([0, 0]);
                       },
                       child: const Icon(Icons.arrow_downward),
                     ),
