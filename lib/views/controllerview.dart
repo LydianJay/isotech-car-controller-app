@@ -113,7 +113,7 @@ class _ControllerViewState extends State<ControllerView> {
                     IconButton.filled(
                       onPressed: () async {
                         armState == 16 ? armState = 0 : armState = 16;
-                        _sendBytes([armState, 0]);
+                        _sendBytes([16, 0]);
                       },
                       icon: const Icon(CustomIcon.robot_arm),
                       iconSize: 50,
